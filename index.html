@@ -176,8 +176,14 @@ const fmt=d=>d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())+' '+p2(d
 function addLog(type,src){
   const e=estimate();const now=new Date();
   const r={t:fmt(now),ts:now.getTime(),type,src:src||'手動'};
-  if(cur&&e){r.route=ROUTES[cur.route].name;r.dir=cur.dir==='dn'?'下り':'上り';r.kp=+e.kp.toFixed(3);const cp=curPos(e);r.lat=+cp.lat.toFixed(6);r.lon=+cp.lon.toFixed(6);if(cur.on)r.elev=Math.round(elevAt(cur.route,e.kp));r.galt=cur.alt!=null?Math.round(cur.alt):'';r.acc=cur.acc!=null?Math.round(cur.acc):'';r.spd=cur.spd!=null?Math.round(cur.spd*3.6):'';r.est=e.est?'推定':(cur.on?'':'道路外');}
-  else{r.est='位置なし';}
+  if(cur){
+    const cp=curPos(e);
+    r.lat=+cp.lat.toFixed(6);r.lon=+cp.lon.toFixed(6);
+    r.galt=cur.alt!=null?Math.round(cur.alt):'';
+    r.acc=cur.acc!=null?Math.round(cur.acc):'';r.spd=cur.spd!=null?Math.round(cur.spd*3.6):'';
+    if(e){r.route=ROUTES[cur.route].name;r.dir=cur.dir==='dn'?'下り':'上り';r.kp=+e.kp.toFixed(3);if(cur.on)r.elev=Math.round(elevAt(cur.route,e.kp));r.est=e.est?'推定':(cur.on?'':'道路外');}
+    else r.est='道路外';
+  }else{r.est='位置なし';}
   LOG.push(r);saveLog();renderLog();draw();
   toast('<b>'+type+' '+(r.kp!=null?kf(r.kp)+' KP':'(位置なし)')+'</b>'+(r.lat!=null?'<br><small>'+r.lat.toFixed(6)+', '+r.lon.toFixed(6)+(r.elev!=null?'　標高 '+r.elev+' m':'')+'</small>':''));
 }
