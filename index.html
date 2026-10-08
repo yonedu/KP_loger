@@ -41,19 +41,20 @@ canvas{display:block;width:100%;height:100%}
 .big span{display:block;font-size:12px;font-weight:400;opacity:.85;margin-top:2px}
 .big:active{transform:scale(.97);filter:brightness(.9)}
 #cut{background:var(--red)}#con{background:var(--green)}
-#logbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;flex:0 1 auto;max-height:22dvh;min-height:84px;display:flex;flex-direction:column;overflow:hidden}
+#logbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;flex:0 1 auto;max-height:30dvh;min-height:84px;display:flex;flex-direction:column;overflow:hidden}
 #lh{display:flex;justify-content:space-between;align-items:center;padding:6px 12px 2px;font-size:12px;color:var(--ink2);font-weight:700;gap:6px;flex-wrap:wrap}
 #lh .acts{display:flex;gap:10px}
 #lh button{border:0;background:none;color:var(--blue);font:inherit;font-size:12px;font-weight:700;padding:2px 0;cursor:pointer}
 #lh button.del{color:var(--red)}
 #ll{overflow:auto;padding:0 12px 6px;font-size:13px}
+.s{font-size:11px;color:var(--ink2);padding:0 0 3px;font-variant-numeric:tabular-nums}
 .r{display:grid;grid-template-columns:62px 38px 1fr auto;gap:6px;padding:3px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
 .r:first-child{border-top:0}.t0{color:var(--red);font-weight:700}.t1{color:var(--green);font-weight:700}.r i{color:var(--ink2);font-style:normal;font-size:11px;align-self:center}
 #bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex:none;font-size:11px;color:var(--ink2)}
 #bar select,#bar button,#bar input[type=number]{font:inherit;font-size:12px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:3px 6px}
 #bar label{display:flex;gap:4px;align-items:center}
 #sim{display:none;gap:6px;align-items:center;flex-wrap:wrap}
-#toast{position:fixed;left:50%;bottom:22%;transform:translateX(-50%);background:#111c;color:#fff;border-radius:12px;padding:10px 16px;font-size:15px;font-weight:700;display:none;z-index:9;white-space:nowrap}
+#toast{text-align:center;line-height:1.5;position:fixed;left:50%;bottom:22%;transform:translateX(-50%);background:#111c;color:#fff;border-radius:12px;padding:10px 16px;font-size:15px;font-weight:700;display:none;z-index:9;white-space:nowrap}
 #toast button{margin-left:10px;border:1px solid #fff8;background:none;color:#fff;border-radius:8px;padding:2px 8px;font:inherit;cursor:pointer}
 </style>
 </head>
@@ -123,7 +124,7 @@ const angd=(a,b)=>{let d=Math.abs(a-b)%360;return d>180?360-d:d;};
 
 /* ---------- 状態 ---------- */
 let cur=null,prevFix=null,forceDir='';
-let KD=2;try{KD=+localStorage.getItem('kp_digits')||2;}catch(e){}
+let KD=3;try{KD=+localStorage.getItem('kp_digits3')||3;}catch(e){}
 const kf=v=>(+v).toFixed(KD);
 const LOGKEY='kplog_v1';
 let LOG=[];try{LOG=JSON.parse(localStorage.getItem(LOGKEY)||'[]');}catch(e){}
@@ -178,16 +179,20 @@ function addLog(type,src){
   if(cur&&e){r.route=ROUTES[cur.route].name;r.dir=cur.dir==='dn'?'下り':'上り';r.kp=+e.kp.toFixed(3);const cp=curPos(e);r.lat=+cp.lat.toFixed(6);r.lon=+cp.lon.toFixed(6);if(cur.on)r.elev=Math.round(elevAt(cur.route,e.kp));r.galt=cur.alt!=null?Math.round(cur.alt):'';r.acc=cur.acc!=null?Math.round(cur.acc):'';r.spd=cur.spd!=null?Math.round(cur.spd*3.6):'';r.est=e.est?'推定':(cur.on?'':'道路外');}
   else{r.est='位置なし';}
   LOG.push(r);saveLog();renderLog();draw();
-  toast(type+' '+(r.kp!=null?kf(r.kp)+' KP':'(位置なし)'));
+  toast('<b>'+type+' '+(r.kp!=null?kf(r.kp)+' KP':'(位置なし)')+'</b>'+(r.lat!=null?'<br><small>'+r.lat.toFixed(6)+', '+r.lon.toFixed(6)+(r.elev!=null?'　標高 '+r.elev+' m':'')+'</small>':''));
 }
 function renderLog(){
   $('lc').textContent='記録('+LOG.length+'件)';
-  $('ll').innerHTML=LOG.slice().reverse().slice(0,200).map(r=>'<div class="r"><span>'+r.t.slice(11)+'</span><span class="'+(r.type==='切断'?'t0':'t1')+'">'+r.type+'</span><span><b>'+(r.kp!=null?kf(r.kp)+' KP':'--')+'</b> '+(r.dir||'')+'</span><i>'+r.src+(r.est?' '+r.est:'')+'</i></div>').join('')||'<div class="r"><i>まだ記録がありません</i></div>';
+  const row=r=>{
+    const pos=r.lat!=null?r.lat.toFixed(6)+', '+r.lon.toFixed(6):'位置なし';
+    const el=[r.elev!=null?'標高 '+r.elev+' m':'',(r.galt!==''&&r.galt!=null)?'GPS '+r.galt+' m':''].filter(Boolean).join(' / ');
+    return '<div class="e"><div class="r"><span>'+r.t.slice(11)+'</span><span class="'+(r.type==='切断'?'t0':'t1')+'">'+r.type+'</span><span><b>'+(r.kp!=null?kf(r.kp)+' KP':'--')+'</b> '+(r.dir||'')+'</span><i>'+r.src+(r.est?' '+r.est:'')+'</i></div><div class="s">'+pos+(el?'　'+el:'')+'</div></div>';};
+  $('ll').innerHTML=LOG.slice().reverse().slice(0,200).map(row).join('')||'<div class="r"><i>まだ記録がありません</i></div>';
 }
 function csvText(){
   const H=['時刻','種別','路線','方向','キロポスト','緯度','経度','標高(m)路線データ','標高(m)GPS','精度(m)','速度(km/h)','記録元','備考'];
   const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
-  return H.map(q).join(',')+'\r\n'+LOG.map(r=>[r.t,r.type,r.route,r.dir,r.kp,r.lat,r.lon,r.elev,r.galt,r.acc,r.spd,r.src,r.est].map(q).join(',')).join('\r\n');
+  return H.map(q).join(',')+'\r\n'+LOG.map(r=>[r.t,r.type,r.route,r.dir,r.kp!=null?(+r.kp).toFixed(3):'',r.lat!=null?(+r.lat).toFixed(6):'',r.lon!=null?(+r.lon).toFixed(6):'',r.elev,r.galt,r.acc,r.spd,r.src,r.est].map(q).join(',')).join('\r\n');
 }
 let toastT=0;
 function toast(msg,undo){const t=$('toast');t.innerHTML=msg+(undo===false?'':'<button id="tu">取消</button>');t.style.display='block';clearTimeout(toastT);toastT=setTimeout(()=>t.style.display='none',4000);const b=$('tu');if(b)b.onclick=()=>{LOG.pop();saveLog();renderLog();draw();t.style.display='none';};}
@@ -199,7 +204,7 @@ $('cp').onclick=()=>{const t=csvText();(navigator.clipboard&&navigator.clipboard
 $('ksel').value=String(KD);
 function applyKD(){document.getElementById('kp').style.fontSize=KD>=3?'clamp(38px,12.5vw,56px)':'';}
 applyKD();
-$('ksel').onchange=e=>{KD=+e.target.value;try{localStorage.setItem('kp_digits',KD);}catch(_){}applyKD();renderLog();upd();};
+$('ksel').onchange=e=>{KD=+e.target.value;try{localStorage.setItem('kp_digits3',KD);}catch(_){}applyKD();renderLog();upd();};
 $('cpll').onclick=()=>{const cp=cur&&curPos(estimate());if(!cp){toast('位置がありません',false);return;}const t=cp.lat.toFixed(6)+', '+cp.lon.toFixed(6);(navigator.clipboard&&navigator.clipboard.writeText?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('コピー: '+t,false),()=>{const x=document.createElement('textarea');x.value=t;document.body.appendChild(x);x.select();try{document.execCommand('copy');toast('コピー: '+t,false);}catch(e){toast('コピー失敗',false);}x.remove();});};
 $('dsel').onchange=e=>{forceDir=e.target.value;};
 $('auto').onchange=e=>{try{localStorage.setItem('kp_auto',e.target.checked?'1':'');}catch(_){}};
